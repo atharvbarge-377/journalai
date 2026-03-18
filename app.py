@@ -1,12 +1,8 @@
 from flask import Flask, render_template, request, jsonify
 import anthropic
-import base64
 import os
 
 app = Flask(__name__)
-
-# Put your Anthropic API key in environment variable ANTHROPIC_API_KEY
-client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", "YOUR_API_KEY_HERE"))
 
 SYSTEM_PROMPT = """You are a journal PDF parser for Indian BCA/engineering students.
 Extract experiment details from the uploaded PDF and return a JSON object ONLY (no markdown, no explanation).
@@ -25,7 +21,7 @@ Return this exact structure:
 
 Rules:
 - expNo: just the number
-- title: exact title after "Title -"
+- title: exact title after Title
 - code: full code exactly as written
 - output: only the terminal/console output block content
 - Return ONLY valid JSON, nothing else"""
@@ -44,6 +40,12 @@ def parse_pdf():
 
         if not pdf_b64:
             return jsonify({"error": "No PDF provided"}), 400
+
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            return jsonify({"error": "API key not configured"}), 500
+
+        client = anthropic.Anthropic(api_key=api_key)
 
         message = client.messages.create(
             model="claude-opus-4-5",
